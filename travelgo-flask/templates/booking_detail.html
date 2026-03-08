@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}TravelGo — Booking {{ booking.booking_id[:8] }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .confirm-wrap { max-width: 620px; margin: 0 auto; }
+  .confirm-banner {
+    background: linear-gradient(135deg, #0A1628, #1A3A5C);
+    border-radius: 18px; padding: 36px 40px; text-align: center;
+    color: #fff; margin-bottom: 24px;
+  }
+  .confirm-icon  { font-size: 52px; margin-bottom: 14px; }
+  .confirm-title { font-size: 28px; margin-bottom: 8px; }
+  .confirm-sub   { font-size: 14px; color: #8EAFC2; }
+  .detail-card   { background: #fff; border-radius: 14px; padding: 28px 32px; box-shadow: 0 4px 20px rgba(10,22,40,0.08); margin-bottom: 20px; }
+  .detail-card h3 { font-size: 17px; color: #0A1628; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid #F0F4FA; }
+  .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #F4F7FA; font-size: 14px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: #6B7A8D; }
+  .detail-value { font-weight: 600; color: #1A2A3A; }
+  .total-row { font-size: 18px; }
+  .total-row .detail-value { color: var(--teal); font-size: 22px; font-family: 'Playfair Display', serif; }
+  .actions { display: flex; gap: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirm-wrap">
+  <div class="confirm-banner">
+    <div class="confirm-icon">
+      {% if booking.status == 'confirmed' %}✅{% else %}❌{% endif %}
+    </div>
+    <h2 class="confirm-title">
+      {% if booking.status == 'confirmed' %}Booking Confirmed!{% else %}Booking Cancelled{% endif %}
+    </h2>
+    <p class="confirm-sub">
+      {% if booking.status == 'confirmed' %}
+        A confirmation email has been sent to {{ booking.user_email }} via AWS SNS.
+      {% else %}
+        This booking has been cancelled. Refund will be processed in 5–7 days.
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="detail-card">
+    <h3>Booking Details</h3>
+    <div class="detail-row"><span class="detail-label">Booking ID</span><span class="detail-value" style="font-family:monospace; font-size:12px; color:#4A6A8A;">{{ booking.booking_id }}</span></div>
+    <div class="detail-row"><span class="detail-label">Destination</span><span class="detail-value">{{ booking.destination }}</span></div>
+    <div class="detail-row"><span class="detail-label">Flight</span><span class="detail-value">{{ booking.flight_id }}</span></div>
+    <div class="detail-row"><span class="detail-label">Seats</span><span class="detail-value">{{ booking.seats | join(', ') }}</span></div>
+    <div class="detail-row"><span class="detail-label">Number of Seats</span><span class="detail-value">{{ booking.seats | length }}</span></div>
+    {% if dest %}
+    <div class="detail-row"><span class="detail-label">Duration</span><span class="detail-value">{{ dest.duration }}</span></div>
+    {% endif %}
+    <div class="detail-row"><span class="detail-label">Booked On</span><span class="detail-value">{{ booking.timestamp[:10] }}</span></div>
+    <div class="detail-row"><span class="detail-label">Status</span>
+      <span class="badge {% if booking.status == 'confirmed' %}badge-green{% else %}badge-red{% endif %}">{{ booking.status | upper }}</span>
+    </div>
+    <div class="detail-row total-row">
+      <span class="detail-label">Total Amount</span>
+      <span class="detail-value">${{ "{:,}".format(booking.total_price | int) }}</span>
+    </div>
+  </div>
+
+  <div class="detail-card">
+    <h3>AWS Notification</h3>
+    <div class="detail-row">
+      <span class="detail-label">Service</span>
+      <span class="detail-value">Amazon SNS</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Sent To</span>
+      <span class="detail-value">{{ booking.user_email }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Topic</span>
+      <span class="detail-value" style="font-size:12px; font-family:monospace; color:#4A6A8A;">booking-confirmation-seat</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Status</span>
+      <span class="badge badge-green">Delivered</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-teal" style="flex:1; text-align:center;">My Dashboard</a>
+    {% if booking.status == 'confirmed' %}
+      <form method="POST" action="{{ url_for('cancel_booking', booking_id=booking.booking_id) }}" onsubmit="return confirm('Cancel this booking?')" style="flex:1;">
+        <button type="submit" class="btn btn-danger btn-full">Cancel Booking</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('index') }}" class="btn btn-gold" style="flex:1; text-align:center;">Book Again</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

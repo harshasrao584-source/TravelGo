@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}TravelGo{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:    #0A1628;
+      --blue:    #1A3A5C;
+      --teal:    #0D7A8A;
+      --sky:     #4FB8CC;
+      --gold:    #F0A500;
+      --white:   #FFFFFF;
+      --offwhite:#F4F7FA;
+      --muted:   #6B7A8D;
+      --green:   #2ECC71;
+      --red:     #E74C3C;
+      --shadow:  0 4px 24px rgba(10,22,40,0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--offwhite); color: #1A2A3A; min-height: 100vh; }
+    h1,h2,h3 { font-family: 'Playfair Display', serif; }
+
+    /* ─── NAV ─── */
+    nav {
+      background: var(--navy);
+      padding: 0 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-brand-icon { font-size: 22px; }
+    .nav-brand-text { color: #fff; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+    .nav-brand-sub { font-size: 9px; letter-spacing: 0.25em; color: var(--sky); display: block; text-transform: uppercase; margin-top: -3px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-links a {
+      color: #8EAFC2; text-decoration: none; font-size: 13px; font-weight: 500;
+      padding: 8px 16px; border-radius: 6px; transition: all 0.2s;
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .nav-links a:hover, .nav-links a.active { color: #fff; background: rgba(255,255,255,0.08); }
+    .nav-links .btn-primary {
+      background: var(--gold); color: var(--navy) !important;
+      font-weight: 700; border-radius: 8px;
+    }
+    .nav-links .btn-primary:hover { background: #D49000; }
+
+    /* ─── FLASH MESSAGES ─── */
+    .flash-container { max-width: 1100px; margin: 20px auto 0; padding: 0 24px; }
+    .flash {
+      padding: 12px 18px; border-radius: 8px; margin-bottom: 10px;
+      font-size: 14px; display: flex; align-items: center; gap: 10px;
+    }
+    .flash-success { background: #D4EDDA; color: #155724; border: 1px solid #C3E6CB; }
+    .flash-danger  { background: #F8D7DA; color: #721C24; border: 1px solid #F5C6CB; }
+    .flash-warning { background: #FFF3CD; color: #856404; border: 1px solid #FFEEBA; }
+    .flash-info    { background: #D1ECF1; color: #0C5460; border: 1px solid #BEE5EB; }
+
+    /* ─── MAIN CONTENT ─── */
+    .main { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: #fff; border-radius: 14px; overflow: hidden;
+      box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 10px 40px rgba(10,22,40,0.18); }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      display: inline-block; padding: 11px 24px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.06em; cursor: pointer;
+      border: none; text-decoration: none; transition: all 0.2s; text-align: center;
+      text-transform: uppercase;
+    }
+    .btn-teal    { background: var(--teal); color: #fff; }
+    .btn-teal:hover { background: #0A6070; }
+    .btn-gold    { background: var(--gold); color: var(--navy); }
+    .btn-gold:hover { background: #D49000; }
+    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-danger:hover { background: #C0392B; }
+    .btn-outline { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); }
+    .btn-outline:hover { background: var(--teal); color: #fff; }
+    .btn-full    { width: 100%; }
+
+    /* ─── BADGES ─── */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .badge-teal    { background: rgba(13,122,138,0.12); color: var(--teal); }
+    .badge-gold    { background: rgba(240,165,0,0.12);  color: #B07800; }
+    .badge-green   { background: rgba(46,204,113,0.12); color: #1A8A3A; }
+    .badge-red     { background: rgba(231,76,60,0.12);  color: #C0392B; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--navy); color: #5A7A9A; text-align: center;
+      padding: 28px; font-size: 13px;
+    }
+    footer span { color: var(--sky); }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav>
+  <a href="{{ url_for('index') }}" class="nav-brand">
+    <span class="nav-brand-icon">✈</span>
+    <div>
+      <span class="nav-brand-text">TravelGo</span>
+      <span class="nav-brand-sub">Cloud Booking</span>
+    </div>
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('index') }}">Destinations</a>
+    {% if session.get('user_email') %}
+      <a href="{{ url_for('dashboard') }}">My Bookings</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}" class="btn-primary">Sign Up</a>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash flash-{{ category }}">
+        {% if category == 'success' %}✅{% elif category == 'danger' %}❌{% elif category == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<div class="main">
+  {% block content %}{% endblock %}
+</div>
+
+<footer>
+  <p>© 2024 <span>TravelGo</span> — A Cloud-Powered Real-Time Booking Platform &nbsp;|&nbsp; Built with AWS DynamoDB · SNS · EC2 · Flask</p>
+</footer>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

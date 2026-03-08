@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}TravelGo — Explore Destinations{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hero {
+    background: linear-gradient(135deg, #0A1628 0%, #1A3A5C 60%, #0D7A8A 100%);
+    border-radius: 18px; padding: 64px 48px; margin-bottom: 48px;
+    color: #fff; position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: "✈"; position: absolute; right: 48px; top: 50%;
+    transform: translateY(-50%); font-size: 120px; opacity: 0.06;
+  }
+  .hero h1 { font-size: 48px; color: #fff; margin-bottom: 14px; }
+  .hero p  { font-size: 18px; color: #8EAFC2; max-width: 520px; margin-bottom: 28px; }
+  .hero-stats { display: flex; gap: 36px; margin-top: 32px; }
+  .hero-stat-num  { font-size: 28px; font-weight: 700; color: #F0A500; font-family: 'Playfair Display', serif; }
+  .hero-stat-label{ font-size: 12px; color: #6B8AA0; text-transform: uppercase; letter-spacing: 0.12em; }
+
+  .section-title { font-size: 28px; color: #0A1628; margin-bottom: 8px; }
+  .section-sub   { font-size: 14px; color: #6B7A8D; margin-bottom: 32px; }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 7px 18px; border-radius: 20px; border: 1.5px solid #D0DCE8;
+    background: #fff; color: #4A6A8A; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .filter-btn.active, .filter-btn:hover {
+    background: var(--teal); border-color: var(--teal); color: #fff;
+  }
+
+  .dest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+  .dest-card { border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 4px 20px rgba(10,22,40,0.10); transition: transform 0.2s, box-shadow 0.2s; }
+  .dest-card:hover { transform: translateY(-5px); box-shadow: 0 14px 40px rgba(10,22,40,0.18); }
+  .dest-img  { height: 200px; background-size: cover; background-position: center; position: relative; }
+  .dest-img-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(10,22,40,0.85)); }
+  .dest-name { position: absolute; bottom: 14px; left: 18px; color: #fff; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+  .dest-country { position: absolute; bottom: 18px; right: 14px; font-size: 11px; color: rgba(255,255,255,0.65); }
+  .dest-tag-badge { position: absolute; top: 14px; left: 14px; }
+  .dest-body { padding: 18px 20px; }
+  .dest-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .dest-price { font-size: 24px; font-weight: 700; color: var(--teal); font-family: 'Playfair Display', serif; }
+  .dest-price span { font-size: 13px; color: #8A9AAA; font-family: 'Inter', sans-serif; font-weight: 400; }
+  .dest-duration { font-size: 12px; color: #6B7A8D; background: #F0F4FA; padding: 4px 10px; border-radius: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="hero">
+  <h1>Where Will You Go Next? 🌍</h1>
+  <p>Book real-time travel packages with instant confirmation. Powered by AWS cloud infrastructure.</p>
+  {% if not session.get('user_email') %}
+    <a href="{{ url_for('register') }}" class="btn btn-gold">Get Started Free</a>
+    <a href="{{ url_for('login') }}" class="btn btn-outline" style="margin-left:12px; color:#fff; border-color:rgba(255,255,255,0.3);">Sign In</a>
+  {% else %}
+    <a href="{{ url_for('dashboard') }}" class="btn btn-gold">My Bookings</a>
+  {% endif %}
+  <div class="hero-stats">
+    <div><div class="hero-stat-num">{{ destinations|length }}</div><div class="hero-stat-label">Destinations</div></div>
+    <div><div class="hero-stat-num">AWS</div><div class="hero-stat-label">Cloud Powered</div></div>
+    <div><div class="hero-stat-num">Real-Time</div><div class="hero-stat-label">Seat Booking</div></div>
+  </div>
+</div>
+
+<!-- Destinations -->
+<h2 class="section-title">Explore Destinations</h2>
+<p class="section-sub">Select any destination to view real-time seat availability and book your trip.</p>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="filterDest('all', this)">All</button>
+  {% set tags = destinations | map(attribute='tag') | unique | list %}
+  {% for tag in tags %}
+    <button class="filter-btn" onclick="filterDest('{{ tag }}', this)">{{ tag }}</button>
+  {% endfor %}
+</div>
+
+<div class="dest-grid">
+  {% for dest in destinations %}
+  <div class="dest-card" data-tag="{{ dest.tag }}">
+    <div class="dest-img" style="background-image: url('{{ dest.image }}')">
+      <div class="dest-img-overlay"></div>
+      <div class="dest-tag-badge">
+        <span class="badge badge-teal">{{ dest.tag }}</span>
+      </div>
+      <div class="dest-name">{{ dest.name }}</div>
+    </div>
+    <div class="dest-body">
+      <div class="dest-meta">
+        <div class="dest-price">${{ "{:,}".format(dest.price) }}<span> / person</span></div>
+        <div class="dest-duration">🕐 {{ dest.duration }}</div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <span style="font-size:12px; color:#6B7A8D;">✈ {{ dest.flight_id }}</span>
+        <span style="font-size:12px; color:#1A8A3A; font-weight:600;">{{ dest.seats_total }} seats available</span>
+      </div>
+      {% if session.get('user_email') %}
+        <a href="{{ url_for('destination_detail', dest_id=dest.id) }}" class="btn btn-teal btn-full">View & Book</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-outline btn-full">Login to Book</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function filterDest(tag, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.dest-card').forEach(card => {
+      card.style.display = (tag === 'all' || card.dataset.tag === tag) ? '' : 'none';
+    });
+  }
+</script>
+{% endblock %}

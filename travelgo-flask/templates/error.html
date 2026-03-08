@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}TravelGo — Error {{ code }}{% endblock %}
+{% block content %}
+<div style="text-align:center; padding:80px 0; max-width:480px; margin:0 auto;">
+  <div style="font-size:72px; margin-bottom:16px;">{% if code == 404 %}🗺️{% else %}⚠️{% endif %}</div>
+  <h1 style="font-size:56px; color:#0A1628; margin-bottom:12px;">{{ code }}</h1>
+  <p style="font-size:16px; color:#6B7A8D; margin-bottom:28px;">{{ message }}</p>
+  <a href="{{ url_for('index') }}" class="btn btn-teal">Back to Home</a>
+</div>
+{% endblock %}

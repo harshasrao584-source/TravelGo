@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}TravelGo — {{ dest.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dest-hero {
+    height: 320px; border-radius: 18px; background-size: cover; background-position: center;
+    position: relative; margin-bottom: 32px; overflow: hidden;
+  }
+  .dest-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(10,22,40,0.2) 30%, rgba(10,22,40,0.85)); }
+  .dest-hero-content { position: absolute; bottom: 28px; left: 32px; color: #fff; }
+  .dest-hero-content h1 { font-size: 36px; margin-bottom: 6px; }
+  .dest-hero-content p  { font-size: 14px; color: rgba(255,255,255,0.7); }
+  .dest-hero-price { position: absolute; bottom: 28px; right: 32px; text-align: right; color: #fff; }
+  .dest-hero-price .price { font-size: 32px; font-weight: 700; font-family: 'Playfair Display', serif; color: var(--gold); }
+  .dest-hero-price .per  { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 28px; align-items: start; }
+
+  .info-card { background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 4px 20px rgba(10,22,40,0.08); margin-bottom: 24px; }
+  .info-card h3 { font-size: 18px; color: #0A1628; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #F0F4FA; }
+  .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #F0F4FA; font-size: 14px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: #6B7A8D; }
+  .info-value { font-weight: 600; color: #1A2A3A; }
+
+  /* Seat grid */
+  .seat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+  .seat {
+    aspect-ratio: 1; border-radius: 9px; border: 2px solid #D0DCE8;
+    background: #F8FAFC; cursor: pointer; font-size: 11px; font-weight: 700;
+    color: #4A6A8A; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; position: relative; user-select: none;
+  }
+  .seat:hover:not(.booked) { border-color: var(--teal); background: rgba(13,122,138,0.08); }
+  .seat.selected { border-color: var(--teal); background: var(--teal); color: #fff; }
+  .seat.booked   { background: #F0F0F0; border-color: #D0D0D0; color: #B0B0B0; cursor: not-allowed; }
+  .seat-legend { display: flex; gap: 16px; font-size: 12px; color: #6B7A8D; margin-bottom: 20px; }
+  .seat-legend-dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 5px; }
+
+  /* Booking summary sticky card */
+  .summary-card { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 4px 20px rgba(10,22,40,0.08); position: sticky; top: 84px; }
+  .summary-card h3 { font-size: 17px; color: #0A1628; margin-bottom: 18px; }
+  .summary-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #F0F4FA; font-size: 14px; }
+  .summary-total { font-size: 20px; font-weight: 700; color: var(--teal); margin-top: 14px; }
+  #selected-seats-list { font-size: 13px; color: #4A6A8A; min-height: 24px; margin-top: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="dest-hero" style="background-image: url('{{ dest.image }}')">
+  <div class="dest-hero-overlay"></div>
+  <div class="dest-hero-content">
+    <h1>{{ dest.name }}</h1>
+    <p>✈ {{ dest.flight_id }} &nbsp;·&nbsp; 🕐 {{ dest.duration }} &nbsp;·&nbsp; <span class="badge badge-teal">{{ dest.tag }}</span></p>
+  </div>
+  <div class="dest-hero-price">
+    <div class="price">${{ "{:,}".format(dest.price) }}</div>
+    <div class="per">per person</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <!-- Left column -->
+  <div>
+    <!-- Trip Info -->
+    <div class="info-card">
+      <h3>Trip Details</h3>
+      <div class="info-row"><span class="info-label">Destination</span><span class="info-value">{{ dest.name }}</span></div>
+      <div class="info-row"><span class="info-label">Flight ID</span><span class="info-value">{{ dest.flight_id }}</span></div>
+      <div class="info-row"><span class="info-label">Duration</span><span class="info-value">{{ dest.duration }}</span></div>
+      <div class="info-row"><span class="info-label">Price per Seat</span><span class="info-value" style="color:var(--teal)">${{ "{:,}".format(dest.price) }}</span></div>
+      <div class="info-row"><span class="info-label">Category</span><span class="info-value">{{ dest.tag }}</span></div>
+      <div class="info-row">
+        <span class="info-label">Availability</span>
+        <span class="info-value" style="color:{% if available_count > 5 %}var(--green){% elif available_count > 0 %}#E67E22{% else %}var(--red){% endif %}">
+          {{ available_count }} seats left
+        </span>
+      </div>
+    </div>
+
+    <!-- Seat Selection -->
+    <div class="info-card">
+      <h3>Select Your Seats</h3>
+      <div class="seat-legend">
+        <div><span class="seat-legend-dot" style="background:#F8FAFC; border:2px solid #D0DCE8;"></span>Available</div>
+        <div><span class="seat-legend-dot" style="background:var(--teal);"></span>Selected</div>
+        <div><span class="seat-legend-dot" style="background:#F0F0F0; border:2px solid #D0D0D0;"></span>Booked</div>
+      </div>
+
+      <form method="POST" action="{{ url_for('book') }}" id="booking-form">
+        <input type="hidden" name="dest_id" value="{{ dest.id }}"/>
+        <div class="seat-grid">
+          {% for seat in seats %}
+          <label class="seat {% if seat.is_booked %}booked{% endif %}" title="{{ seat.seat_number }}{% if seat.is_booked %} (Booked){% endif %}">
+            <input type="checkbox" name="seat_ids" value="{{ seat.seat_id }}"
+              {% if seat.is_booked %}disabled{% endif %}
+              style="position:absolute;opacity:0;width:0;height:0;"
+              onchange="updateSummary()"/>
+            {{ seat.seat_number }}
+          </label>
+          {% endfor %}
+        </div>
+
+        <div id="selected-seats-list">No seats selected yet.</div>
+
+        {% if available_count == 0 %}
+          <div class="badge badge-red" style="display:block; text-align:center; padding:12px; margin-top:12px;">
+            Fully Booked — No seats available
+          </div>
+        {% else %}
+          <button type="submit" id="book-btn" class="btn btn-gold btn-full" style="margin-top:18px; font-size:14px; padding:14px;" disabled>
+            Confirm Booking
+          </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: Summary -->
+  <div class="summary-card">
+    <h3>📋 Booking Summary</h3>
+    <div class="summary-row"><span>Destination</span><span>{{ dest.name }}</span></div>
+    <div class="summary-row"><span>Price / seat</span><span>${{ "{:,}".format(dest.price) }}</span></div>
+    <div class="summary-row"><span>Seats selected</span><span id="seats-count">0</span></div>
+    <div class="summary-row">
+      <span style="font-weight:600;">Total</span>
+      <span class="summary-total" id="total-price">$0</span>
+    </div>
+    <div style="margin-top:18px; font-size:12px; color:#8A9AAA; line-height:1.6;">
+      ✅ Instant booking confirmation<br/>
+      📧 Email notification via AWS SNS<br/>
+      🔒 Secured by AWS IAM
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const pricePerSeat = {{ dest.price }};
+
+  function updateSummary() {
+    const checkboxes = document.querySelectorAll('input[name="seat_ids"]:checked');
+    const count = checkboxes.length;
+    const total = count * pricePerSeat;
+
+    document.getElementById('seats-count').textContent = count;
+    document.getElementById('total-price').textContent = '$' + total.toLocaleString();
+
+    const labels = Array.from(checkboxes).map(cb => cb.closest('label').textContent.trim());
+    document.getElementById('selected-seats-list').textContent =
+      count > 0 ? 'Selected: ' + labels.join(', ') : 'No seats selected yet.';
+
+    const btn = document.getElementById('book-btn');
+    if (btn) btn.disabled = count === 0;
+
+    // Update seat label styles
+    document.querySelectorAll('.seat:not(.booked)').forEach(label => {
+      const cb = label.querySelector('input');
+      label.classList.toggle('selected', cb && cb.checked);
+    });
+  }
+</script>
+{% endblock %}

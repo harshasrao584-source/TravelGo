@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}TravelGo — My Bookings{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dash-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+  .dash-header h1 { font-size: 32px; color: #0A1628; margin-bottom: 4px; }
+  .dash-header p  { font-size: 14px; color: #6B7A8D; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 36px; }
+  .stat-card { background: #fff; border-radius: 14px; padding: 24px 28px; box-shadow: 0 4px 18px rgba(10,22,40,0.08); }
+  .stat-num   { font-size: 36px; font-weight: 700; font-family: 'Playfair Display', serif; }
+  .stat-label { font-size: 12px; color: #6B7A8D; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 4px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 24px; border-bottom: 2px solid #E8EEF4; padding-bottom: 0; }
+  .tab {
+    padding: 10px 22px; font-size: 13px; font-weight: 600; color: #6B7A8D;
+    cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.2s;
+  }
+  .tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  .booking-list { display: flex; flex-direction: column; gap: 16px; }
+  .booking-card {
+    background: #fff; border-radius: 14px; padding: 0; overflow: hidden;
+    box-shadow: 0 4px 18px rgba(10,22,40,0.07); display: grid; grid-template-columns: 180px 1fr auto;
+    transition: box-shadow 0.2s;
+  }
+  .booking-card:hover { box-shadow: 0 8px 32px rgba(10,22,40,0.13); }
+  .booking-img { background-size: cover; background-position: center; min-height: 130px; }
+  .booking-body { padding: 20px 24px; }
+  .booking-dest { font-size: 19px; font-family: 'Playfair Display', serif; color: #0A1628; margin-bottom: 6px; }
+  .booking-meta { font-size: 12px; color: #6B7A8D; display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .booking-meta span { display: flex; align-items: center; gap: 4px; }
+  .booking-id { font-size: 11px; color: #AAB8C8; font-family: monospace; }
+  .booking-actions { padding: 20px 24px; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; border-left: 1px solid #F0F4FA; min-width: 160px; }
+  .booking-price { font-size: 22px; font-weight: 700; color: var(--teal); font-family: 'Playfair Display', serif; }
+  .booking-price-label { font-size: 11px; color: #AAB8C8; }
+
+  .empty-state { text-align: center; padding: 80px 0; color: #8A9AAA; }
+  .empty-state .icon { font-size: 52px; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 20px; color: #4A6A8A; margin-bottom: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dash-header">
+  <div>
+    <h1>Welcome, {{ session.user_name }} 👋</h1>
+    <p>{{ session.user_email }} &nbsp;·&nbsp; {{ bookings|length }} total booking{{ 's' if bookings|length != 1 }}</p>
+  </div>
+  <a href="{{ url_for('index') }}" class="btn btn-gold">+ New Booking</a>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-num" style="color:var(--teal)">{{ bookings|length }}</div>
+    <div class="stat-label">Total Bookings</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:#2ECC71">{{ active|length }}</div>
+    <div class="stat-label">Active Trips</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:var(--gold)">
+      ${{ "{:,}".format(active | sum(attribute='total_price') | int) }}
+    </div>
+    <div class="stat-label">Total Spent</div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('all', this)">All ({{ bookings|length }})</div>
+  <div class="tab" onclick="showTab('active', this)">Active ({{ active|length }})</div>
+  <div class="tab" onclick="showTab('cancelled', this)">Cancelled ({{ cancelled|length }})</div>
+</div>
+
+<!-- Bookings -->
+<div class="booking-list">
+  {% if bookings %}
+    {% for b in bookings %}
+    <div class="booking-card" data-status="{{ b.status }}">
+      {% if b.dest_info %}
+        <div class="booking-img" style="background-image: url('{{ b.dest_info.image }}')"></div>
+      {% else %}
+        <div class="booking-img" style="background: #1A3A5C; display:flex; align-items:center; justify-content:center; font-size:32px;">✈</div>
+      {% endif %}
+      <div class="booking-body">
+        <div class="booking-dest">{{ b.destination }}</div>
+        <div class="booking-meta">
+          <span>✈ {{ b.flight_id }}</span>
+          <span>💺 {{ b.seats | join(', ') }}</span>
+          <span>📅 {{ b.timestamp[:10] }}</span>
+          {% if b.dest_info %}
+            <span>🕐 {{ b.dest_info.duration }}</span>
+          {% endif %}
+        </div>
+        <div class="booking-id">ID: {{ b.booking_id }}</div>
+      </div>
+      <div class="booking-actions">
+        <div>
+          <div class="booking-price">${{ "{:,}".format(b.total_price | int) }}</div>
+          <div class="booking-price-label">Total paid</div>
+        </div>
+        <div style="text-align:right;">
+          <span class="badge {% if b.status == 'confirmed' %}badge-green{% else %}badge-red{% endif %}" style="display:block; margin-bottom:10px;">
+            {{ b.status | upper }}
+          </span>
+          {% if b.status == 'confirmed' %}
+            <a href="{{ url_for('booking_detail', booking_id=b.booking_id) }}" class="btn btn-outline" style="font-size:11px; padding:7px 14px; display:block; margin-bottom:6px;">View</a>
+            <form method="POST" action="{{ url_for('cancel_booking', booking_id=b.booking_id) }}" onsubmit="return confirm('Cancel this booking?')">
+              <button type="submit" class="btn btn-danger" style="font-size:11px; padding:7px 14px; width:100%;">Cancel</button>
+            </form>
+          {% else %}
+            <span style="font-size:11px; color:#AAB8C8;">Cancelled {{ b.get('cancelled_at', '')[:10] if b.get('cancelled_at') else '' }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🗺️</div>
+      <h3>No bookings yet</h3>
+      <p>Start exploring destinations and book your first trip!</p>
+      <a href="{{ url_for('index') }}" class="btn btn-teal" style="margin-top:20px;">Explore Destinations</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function showTab(status, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.booking-card').forEach(card => {
+      if (status === 'all' || card.dataset.status === status) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+</script>
+{% endblock %}
